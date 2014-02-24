@@ -28,7 +28,7 @@
         (if (= y 0)
           x
           (if (= x y)
-            ;; output [* x 2], but try to simplify first
+            ;; prefer [* x 2] over [+ x x], but try to simplify first
             (if-let [result (can-associate-multiplication? x 2)]
               [* (first result) (second result)]
               [* x 2])
@@ -51,13 +51,15 @@
           x
           (if (= x y)
             1
-            [/ x y])))))
+            [/ x y])))
+    [op x y]))
 
 (defn- exps-with-ops
   [ops max-nesting numbers vars]
   (if (> max-nesting 1)
     (let [exps (exps-with-ops ops (dec max-nesting) numbers vars)]
-      (concat (mapcat (fn [op]
+      (concat exps
+              (mapcat (fn [op]
                         (mapcat (fn [exp1]
                                   (map (fn [exp2]
                                          (build-exp op exp1 exp2))
@@ -65,8 +67,7 @@
                                          (drop (.indexOf exps exp1) exps)
                                          exps)))
                                 exps))
-                      ops)
-              exps))
+                      ops)))
     (mapcat (fn [op]
               (mapcat (fn [var1]
                         (concat (map (fn [var2]
@@ -101,6 +102,6 @@ These restrictions are:
   [& {:keys [ops max-nesting max-n n-vars]}]
   (let [nums (numbers max-n)
         vs (vars n-vars)]
-    (distinct (concat (exps-with-ops ops max-nesting nums vs)
-                      nums
-                      vs))))
+    (remove nil? (distinct (concat vs
+                                   nums
+                                   (exps-with-ops ops max-nesting nums vs))))))
