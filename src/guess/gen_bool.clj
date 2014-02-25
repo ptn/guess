@@ -1,11 +1,11 @@
 (ns guess.gen-bool)
 
 (defn commutative? [op]
-  (#{=} op))
+  (#{'=} op))
 
 (defn- build [op x y]
   (when-not (= x y)
-    [op x y]))
+    `(~op ~x ~y)))
 
 (defn all
   [& {:keys [ops max-nesting arith-exps]}]

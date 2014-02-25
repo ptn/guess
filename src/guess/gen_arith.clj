@@ -1,58 +1,52 @@
 (ns guess.gen-arith)
 
 (defn commutative? [op]
-  (#{+ *} op))
+  (#{'+ '*} op))
 
 (defn- can-associate-multiplication? [x y]
   (cond
    (and (number? x)
-        (vector? y)
-        (= * (first y)))
+        (coll? y)
+        (= 'clojure.core/* (first y)))
    (if (number? (second y))
      [(last y) (* (second y) x)]
      (if (number? (last y))
        [(second y) (* (last y) x)]))
 
    (and (number? y)
-        (vector? x)
-        (= * (first x)))
+        (coll? x)
+        (= 'clojure.core/* (first x)))
    (if (number? (second x))
      [(last x) (* (second x) y)]
      (if (number? (last x))
        [(second x) (* y (last x))]))))
 
 (defn- build-exp [op x y]
-  (condp = op
-    + (if (= x 0)
-        y
-        (if (= y 0)
-          x
-          (if (= x y)
-            ;; prefer [* x 2] over [+ x x], but try to simplify first
-            (if-let [result (can-associate-multiplication? x 2)]
-              [* (first result) (second result)]
-              [* x 2])
-            [+ x y])))
-    - (if (= x y)
-        0
-        [- x y])
-    * (if (or (= x 0)
-              (= y 0))
-        0
-        (if (= x 1)
-          y
-          (if (= y 1)
-            x
-            (if-let [result (can-associate-multiplication? x y)]
-              [* (first result) (second result)]
-              [* x y]))))
+  (case op
+    + (cond
+       (= x 0) y
+       (= y 0) x
+       ;; prefer [* x 2] over [+ x x], but try to simplify first
+       (= x y) (if-let [result (can-associate-multiplication? x 2)]
+                 `(* ~(first result) ~(second result))
+                 `(* ~x 2))
+       :else `(+ ~x ~y))
+    - (cond
+       (= x y) 0
+       :else `(- ~x ~y))
+    * (cond
+       (or (= x 0) (= y 0)) 0
+       (= x 1) y
+       (= y 1) x
+       :else (if-let [result (can-associate-multiplication? x y)]
+               `(* ~(first result) ~(second result))
+               `(* ~x ~y)))
     / (when-not (= y 0)
-        (if (= y 1)
-          x
-          (if (= x y)
-            1
-            [/ x y])))
-    [op x y]))
+        (cond
+         (= y 1) x
+         (= x y) 1
+         :else `(/ ~x ~y)))
+    `(~op ~x ~y)))
 
 (defn- exps-with-ops
   [ops max-nesting numbers vars]
@@ -87,8 +81,7 @@
 
 (defn- vars
   [n]
-  (take n [:a :b :c :d :e :f :g :h :i :j :k :l :m
-           :n :o :p :q :r :s :t :u :v :w :x :y :z]))
+  (take n '(a b c d e f g h i j k l m n o p q r s t u v w x y z)))
 
 (defn all
   "Build all possible arithmetic expressions given certain restrictions.

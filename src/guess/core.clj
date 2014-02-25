@@ -2,8 +2,8 @@
   (:require [guess.gen-arith :as arith]
             [guess.gen-bool :as bool]))
 
-(def arithops [+ - * /])
-(def compops [< =])
+(def arithops '(+ - * /))
+(def compops '(< =))
 
 (defn -main [& args]
   (let [nesting 3]
