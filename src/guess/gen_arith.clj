@@ -72,7 +72,7 @@
        :else (simplify '+ x y))
     - (cond
        (= x y) 0
-       :else (simplify '- ~x ~y))
+       :else (simplify '- x y))
     * (cond
        (or (= x 0) (= y 0)) 0
        (= x 1) y
@@ -82,7 +82,7 @@
         (cond
          (= y 1) x
          (= x y) 1
-         :else (simplify '/ ~x ~y)))
+         :else (simplify '/ x y)))
     (simplify op x y)))
 
 (defn- exps-with-ops
