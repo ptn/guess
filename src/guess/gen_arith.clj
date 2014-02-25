@@ -1,25 +1,60 @@
 (ns guess.gen-arith)
 
+(defn assoc-with [op]
+  (get {'clojure.core/* *
+        'clojure.core/+ +
+        'clojure.core/- +
+        'clojure.core// *}
+       op))
+
 (defn commutative? [op]
   (#{'+ '*} op))
 
-(defn- can-associate-multiplication? [x y]
+(defn- assoc-chain [op x y]
   (cond
    (and (number? x)
         (coll? y)
-        (= 'clojure.core/* (first y)))
+        (= op (first y)))
    (if (number? (second y))
-     [(last y) (* (second y) x)]
+     `(~op ~(last y) ~((assoc-with op) (second y) x))
      (if (number? (last y))
-       [(second y) (* (last y) x)]))
+       `(~op ~(second y) ~((assoc-with op) (last y) x))))
 
    (and (number? y)
         (coll? x)
-        (= 'clojure.core/* (first x)))
+        (= op (first x)))
    (if (number? (second x))
-     [(last x) (* (second x) y)]
+     `(~op ~(last x) ~((assoc-with op) (second x) y))
      (if (number? (last x))
-       [(second x) (* y (last x))]))))
+       `(~op ~(second x) ~((assoc-with op) y (last x)))))))
+
+(defn- assoc-add [x y]
+  (assoc-chain 'clojure.core/+ x y))
+
+(defn- assoc-sub [x y]
+  (assoc-chain 'clojure.core/- x y))
+
+(defn- assoc-mult [x y]
+  (assoc-chain 'clojure.core/* x y))
+
+(defn- assoc-div [x y]
+  (assoc-chain 'clojure.core// x y))
+
+(defn associate [op x y]
+  (case op
+    + (if-let [result (assoc-add x y)]
+        result
+        `(+ ~x ~y))
+    - (if-let [result (assoc-sub x y)]
+        result
+        `(- ~x ~y))
+    * (if-let [result (assoc-mult x y)]
+        result
+        `(* ~x ~y))
+    / (if-let [result (assoc-div x y)]
+        result
+        `(/ ~x ~y))
+    `(~op ~x ~y)))
 
 (defn- build-exp [op x y]
   (case op
@@ -27,33 +62,28 @@
        (= x 0) y
        (= y 0) x
        ;; prefer [* x 2] over [+ x x], but try to simplify first
-       (= x y) (if-let [result (can-associate-multiplication? x 2)]
-                 `(* ~(first result) ~(second result))
-                 `(* ~x 2))
-       :else `(+ ~x ~y))
+       (= x y) (associate '* x 2)
+       :else (associate '+ x y))
     - (cond
        (= x y) 0
-       :else `(- ~x ~y))
+       :else (associate '- ~x ~y))
     * (cond
        (or (= x 0) (= y 0)) 0
        (= x 1) y
        (= y 1) x
-       :else (if-let [result (can-associate-multiplication? x y)]
-               `(* ~(first result) ~(second result))
-               `(* ~x ~y)))
+       :else (associate '* x y))
     / (when-not (= y 0)
         (cond
          (= y 1) x
          (= x y) 1
-         :else `(/ ~x ~y)))
-    `(~op ~x ~y)))
+         :else (associate '/ ~x ~y)))
+    (associate op x y)))
 
 (defn- exps-with-ops
   [ops max-nesting numbers vars]
   (if (> max-nesting 1)
     (let [exps (exps-with-ops ops (dec max-nesting) numbers vars)]
-      (concat exps
-              (mapcat (fn [op]
+      (concat (mapcat (fn [op]
                         (mapcat (fn [exp1]
                                   (map (fn [exp2]
                                          (build-exp op exp1 exp2))
@@ -61,7 +91,8 @@
                                          (drop (.indexOf exps exp1) exps)
                                          exps)))
                                 exps))
-                      ops)))
+                      ops)
+              exps))
     (mapcat (fn [op]
               (mapcat (fn [var1]
                         (concat (map (fn [var2]
@@ -95,6 +126,6 @@ These restrictions are:
   [& {:keys [ops max-nesting max-n n-vars]}]
   (let [nums (numbers max-n)
         vs (vars n-vars)]
-    (remove nil? (distinct (concat vs
+    (remove nil? (distinct (concat (exps-with-ops ops max-nesting nums vs)
                                    nums
-                                   (exps-with-ops ops max-nesting nums vs))))))
+                                   vs)))))
