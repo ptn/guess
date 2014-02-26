@@ -10,7 +10,7 @@
 (defn commutative? [op]
   (#{'+ '*} op))
 
-(defn- associate-chain
+(defn associate-chain
   "Associate a chain of operations, e.g a * 2 * 2 -> a * 4"
   [op x y]
   (cond
@@ -30,22 +30,22 @@
      (if (number? (last x))
        `(~op ~(second x) ~((assoc-op op) y (last x)))))))
 
-(defn- simplify-add [x y]
+(defn simplify-add [x y]
   (if-let [chained (associate-chain 'clojure.core/+ x y)]
     chained
     `(+ ~x ~y)))
 
-(defn- simplify-sub [x y]
+(defn simplify-sub [x y]
   (if-let [chained (associate-chain 'clojure.core/- x y)]
     chained
     `(- ~x ~y)))
 
-(defn- simplify-mult [x y]
+(defn simplify-mult [x y]
   (if-let [chained (associate-chain 'clojure.core/* x y)]
     chained
     `(* ~x ~y)))
 
-(defn- simplify-div [x y]
+(defn simplify-div [x y]
   (if-let [chained (associate-chain 'clojure.core// x y)]
     chained
     `(/ ~x ~y)))
@@ -60,7 +60,7 @@
     / (simplify-div x y)
     `(~op ~x ~y)))
 
-(defn- build-exp
+(defn build-exp
   "Short circuits operations. If not possible, delegate to simplify."
   [op x y]
   (case op
@@ -71,7 +71,17 @@
        (= x y) (simplify '* x 2)
        :else (simplify '+ x y))
     - (cond
-       (= x y) 0
+       (= x y)
+       0
+
+       (and (number? x)
+            (not (number? y)))
+       (recur '+ y (* x -1))
+
+       (and (number? y)
+            (not (number? x)))
+       (recur '+ x (* -1 y))
+
        :else (simplify '- x y))
     * (cond
        (or (= x 0) (= y 0)) 0
@@ -85,7 +95,7 @@
          :else (simplify '/ x y)))
     (simplify op x y)))
 
-(defn- exps-with-ops
+(defn exps-with-ops
   [ops max-nesting numbers vars]
   (if (> max-nesting 1)
     (let [exps (exps-with-ops ops (dec max-nesting) numbers vars)]
@@ -112,11 +122,11 @@
                       vars))
             ops)))
 
-(defn- numbers
+(defn numbers
   [n]
   (range 1 (+ n 1)))
 
-(defn- vars
+(defn vars
   [n]
   (take n '(a b c d e f g h i j k l m n o p q r s t u v w x y z)))
 
