@@ -58,7 +58,7 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
       true)
     true))
 
-(defn build [op x y]
+(defn build-comp [op x y]
   (when-not (= x y)
     (case op
       = (when (build-equal? x y)
@@ -67,16 +67,42 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
           `(< ~x ~y))
       `(~op ~x ~y))))
 
+;; TODO Boolean operators are not necessarily binary in Lisp.
+(defn build-bool [op x y]
+  (when-not (= x y)
+    `(~op ~x ~y)))
+
+(defn triply-nested-map [ops exps]
+  (mapcat (fn [op]
+            (mapcat (fn [exp1]
+                      (map (fn [exp2]
+                             (build-bool op exp1 exp2))
+                           (drop (+ 1 (.indexOf exps exp1))
+                                 exps)))
+                    exps))
+          ops))
+
+(defn build-bools [ops comps max-nesting]
+  (if (> max-nesting 1)
+    (let [bools (build-bools ops comps (dec max-nesting))]
+      (concat (triply-nested-map ops bools)
+              bools))
+    (triply-nested-map ops comps)))
+
+(defn build-comps [ops arith-exps]
+  (mapcat (fn [op]
+            (mapcat (fn [exp1]
+                      (map (fn [exp2]
+                             (build-comp op exp1 exp2))
+                           (if (commutative? op)
+                             (drop (+ 1 (.indexOf arith-exps exp1))
+                                   arith-exps)
+                             arith-exps)))
+                    arith-exps))
+          ops))
+
 (defn all
-  [& {:keys [ops max-nesting arith-exps]}]
-  (let [raw-exps (mapcat(fn [op]
-                          (mapcat (fn [exp1]
-                                    (map (fn [exp2]
-                                           (build op exp1 exp2))
-                                         (if (commutative? op)
-                                           (drop (+ 1 (.indexOf arith-exps exp1))
-                                                 arith-exps)
-                                           arith-exps)))
-                                  arith-exps))
-                        ops)]
-    (remove nil? (distinct raw-exps))))
+  [& {:keys [boolops compops max-nesting arith-exps]}]
+  (let [comps (remove nil? (distinct (build-comps compops arith-exps)))]
+    (concat (build-bools boolops comps max-nesting)
+            comps)))
