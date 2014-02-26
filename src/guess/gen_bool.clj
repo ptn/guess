@@ -49,11 +49,22 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
       true)
     true))
 
+;; TODO PLEASE refactor.
+(defn build-lt? [x y]
+  (if (same-op? x y)
+    (if-let [[posx posy] (same-var? x y)]
+      (not (and (number? (nth x posx))
+                (number? (nth y posy))))
+      true)
+    true))
+
 (defn build [op x y]
   (when-not (= x y)
     (case op
       = (when (build-equal? x y)
           `(= ~x ~y))
+      < (when (build-lt? x y)
+          `(< ~x ~y))
       `(~op ~x ~y))))
 
 (defn all
