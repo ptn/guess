@@ -16,40 +16,36 @@
 ;;    value is specifically tailored to be used by it.
 (defn same-var?
   "Tests whether x and y apply an arithmetic operation to the same variable,
-e.g. '(+ a 8) and '(* 9 a). Returns the positions of the other operands."
+e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
   [x y]
   (cond
-   (and (symbol? (second x))
-        (symbol? (second y))
+   (and (not (number? (second x)))
+        (not (number? (second y)))
         (= (second x) (second y)))
    [2 2]
 
-   (and (symbol? (second x))
-        (symbol? (last y))
+   (and (not (number? (second x)))
+        (not (number? (last y)))
         (= (second x) (last y)))
    [2 1]
 
-   (and (symbol? (last x))
-        (symbol? (second y))
+   (and (not (number? (last x)))
+        (not (number? (second y)))
         (= (last x) (second y)))
    [1 2]
 
-   (and (symbol? (last x))
-        (symbol? (last y))
+   (and (not (number? (last x)))
+        (not (number? (last y)))
         (= (last x) (last y)))
    [1 1]))
-
-(defn different-other-operand?
-  "Verifies if x and y are expressions that apply and arithmetic operation
-to the same operands, e.g. '(+ a 8) '(- a 8) "
-  [x y pos-other-x pos-other-y]
-  (not (= (nth x pos-other-x) (nth y pos-other-y))))
 
 ;; TODO Refactor.
 (defn build-equal? [x y]
   (if (same-op? x y)
     (if-let [[posx posy] (same-var? x y)]
-      (different-other-operand? x y posx posy)
+      (and (not (= (nth x posx) (nth y posy)))
+           (or (not (number? (nth x posx)))
+               (not (number? (nth y posy)))))
       true)
     true))
 
