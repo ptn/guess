@@ -59,7 +59,9 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
     true))
 
 (defn build-comp [op x y]
-  (when-not (= x y)
+  (when (and (not (= x y))
+             (not (and (number? x)
+                       (number? y))))
     (case op
       = (when (build-equal? x y)
           `(= ~x ~y))

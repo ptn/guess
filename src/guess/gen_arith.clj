@@ -99,16 +99,15 @@
   [ops max-nesting numbers vars]
   (if (> max-nesting 1)
     (let [exps (exps-with-ops ops (dec max-nesting) numbers vars)]
-      (concat exps
-              (mapcat (fn [op]
-                        (mapcat (fn [exp1]
-                                  (map (fn [exp2]
-                                         (build-exp op exp1 exp2))
-                                       (if (commutative? op)
-                                         (drop (.indexOf exps exp1) exps)
-                                         exps)))
-                                exps))
-                      ops)))
+      (mapcat (fn [op]
+                (mapcat (fn [exp1]
+                          (map (fn [exp2]
+                                 (build-exp op exp1 exp2))
+                               (if (commutative? op)
+                                 (drop (.indexOf exps exp1) exps)
+                                 exps)))
+                        exps))
+              ops))
     (mapcat (fn [op]
               (mapcat (fn [var1]
                         (concat (map (fn [var2]
@@ -137,6 +136,6 @@ These restrictions are:
 4. Maximum number of variables to use."
   [& {:keys [ops max-nesting max-constant variables]}]
   (let [nums (numbers max-constant)]
-    (remove nil? (distinct (concat variables
-                                   nums
-                                   (exps-with-ops ops max-nesting nums variables))))))
+    (if (= max-nesting 0)
+      (concat variables nums)
+      (remove nil? (distinct (exps-with-ops ops max-nesting nums variables))))))
