@@ -135,8 +135,8 @@ These restrictions are:
 2. Maximum level of nesting.
 3. Greatest natural number to use as a constant.
 4. Maximum number of variables to use."
-  [& {:keys [ops max-nesting max-n vars]}]
-  (let [nums (numbers max-n)]
-    (remove nil? (distinct (concat vars
+  [& {:keys [ops max-nesting max-constant variables]}]
+  (let [nums (numbers max-constant)]
+    (remove nil? (distinct (concat variables
                                    nums
-                                   (exps-with-ops ops max-nesting nums vars))))))
+                                   (exps-with-ops ops max-nesting nums variables))))))

@@ -102,7 +102,7 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
           ops))
 
 (defn all
-  [& {:keys [boolops compops max-nesting arith-exps]}]
-  (let [comps (remove nil? (distinct (build-comps compops arith-exps)))]
+  [& {:keys [bool-ops comparison-ops max-nesting arith-exps]}]
+  (let [comps (remove nil? (distinct (build-comps comparison-ops arith-exps)))]
     (concat comps
-            (build-bools boolops comps max-nesting))))
+            (build-bools bool-ops comps max-nesting))))
