@@ -85,8 +85,8 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
 (defn build-bools [ops comps max-nesting]
   (if (> max-nesting 1)
     (let [bools (build-bools ops comps (dec max-nesting))]
-      (concat (triply-nested-map ops bools)
-              bools))
+      (concat bools
+              (triply-nested-map ops bools)))
     (triply-nested-map ops comps)))
 
 (defn build-comps [ops arith-exps]
@@ -104,5 +104,5 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
 (defn all
   [& {:keys [boolops compops max-nesting arith-exps]}]
   (let [comps (remove nil? (distinct (build-comps compops arith-exps)))]
-    (concat (build-bools boolops comps max-nesting)
-            comps)))
+    (concat comps
+            (build-bools boolops comps max-nesting))))

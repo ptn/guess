@@ -99,7 +99,8 @@
   [ops max-nesting numbers vars]
   (if (> max-nesting 1)
     (let [exps (exps-with-ops ops (dec max-nesting) numbers vars)]
-      (concat (mapcat (fn [op]
+      (concat exps
+              (mapcat (fn [op]
                         (mapcat (fn [exp1]
                                   (map (fn [exp2]
                                          (build-exp op exp1 exp2))
@@ -107,8 +108,7 @@
                                          (drop (.indexOf exps exp1) exps)
                                          exps)))
                                 exps))
-                      ops)
-              exps))
+                      ops)))
     (mapcat (fn [op]
               (mapcat (fn [var1]
                         (concat (map (fn [var2]
@@ -126,10 +126,6 @@
   [n]
   (range 1 (+ n 1)))
 
-(defn vars
-  [n]
-  (take n '(a b c d e f g h i j k l m n o p q r s t u v w x y z)))
-
 (defn all
   "Build all possible arithmetic expressions given certain restrictions.
 
@@ -139,9 +135,8 @@ These restrictions are:
 2. Maximum level of nesting.
 3. Greatest natural number to use as a constant.
 4. Maximum number of variables to use."
-  [& {:keys [ops max-nesting max-n n-vars]}]
-  (let [nums (numbers max-n)
-        vs (vars n-vars)]
-    (remove nil? (distinct (concat (exps-with-ops ops max-nesting nums vs)
+  [& {:keys [ops max-nesting max-n vars]}]
+  (let [nums (numbers max-n)]
+    (remove nil? (distinct (concat vars
                                    nums
-                                   vs)))))
+                                   (exps-with-ops ops max-nesting nums vars))))))
