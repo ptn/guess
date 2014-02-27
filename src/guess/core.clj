@@ -12,11 +12,18 @@
   (fn [f]
     (when (and (reduce (fn [x y] (and x y))
                        (map (fn [valid]
-                              (eval `(~f ~@valid)))
+                              (try
+                                (eval `(~f ~@valid))
+                                (catch java.lang.ArithmeticException e
+                                  false)))
                             valids))
-               (reduce (fn [x y] (and (not x) (not y)))
+               (reduce (fn [x y] (and x (not y)))
+                       true
                        (map (fn [invalid]
-                              (eval `(~f ~@invalid)))
+                              (try
+                                (eval `(~f ~@invalid))
+                                (catch java.lang.ArithmeticException e
+                                  true)))
                             invalids)))
       f)))
 
@@ -29,5 +36,4 @@
                                      :n-variables 3)]
     (let [[valids invalids] (parse-examples-file (first args))]
       (println (some #(when ((solution? valids invalids) %) %)
-                     ['(fn [x y z] false)
-                      '(fn [x y z] true)])))))
+                     candidates)))))
