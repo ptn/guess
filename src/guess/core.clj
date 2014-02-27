@@ -8,6 +8,18 @@
     [(map parser (str/split-lines raw-valids))
      (map parser (str/split-lines raw-invalids))]))
 
+(defn solution? [valids invalids]
+  (fn [f]
+    (when (and (reduce (fn [x y] (and x y))
+                       (map (fn [valid]
+                              (eval `(~f ~@valid)))
+                            valids))
+               (reduce (fn [x y] (and (not x) (not y)))
+                       (map (fn [invalid]
+                              (eval `(~f ~@invalid)))
+                            invalids)))
+      f)))
+
 (defn -main [& args]
   (let [candidates (synth/synthesize :arith-ops '(+ - * /)
                                      :comparison-ops '(< =)
@@ -16,4 +28,6 @@
                                      :max-constant 5
                                      :n-variables 3)]
     (let [[valids invalids] (parse-examples-file (first args))]
-      (println (type (first valids))))))
+      (println (some #(when ((solution? valids invalids) %) %)
+                     ['(fn [x y z] false)
+                      '(fn [x y z] true)])))))
