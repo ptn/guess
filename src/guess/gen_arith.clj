@@ -95,31 +95,53 @@
          :else (simplify '/ x y)))
     (simplify op x y)))
 
+(defn build-value-exp [ops values exps]
+  (mapcat (fn [op]
+            (let [builder (fn [coll1 coll2]
+                            (mapcat (fn [c1]
+                                      (map (fn [c2]
+                                             (build-exp op c1 c2))
+                                           coll2))
+                                    coll1))]
+              (if (commutative? op)
+                (builder values exps)
+                (concat (builder values exps)
+                        (builder exps values)))))
+          ops))
+
+(defn build-exp-exp [ops exps]
+  (mapcat (fn [op]
+            (mapcat (fn [exp1]
+                      (map (fn [exp2]
+                             (build-exp op exp1 exp2))
+                           (if (commutative? op)
+                             (drop (.indexOf exps exp1) exps)
+                             exps)))
+                    exps))
+          ops))
+
+(defn build-var-num [ops vars nums]
+  (mapcat (fn [op]
+            (mapcat (fn [var1]
+                      (concat (map (fn [var2]
+                                     (build-exp op var1 var2))
+                                   (if (commutative? op)
+                                     (drop (.indexOf vars var1) vars)
+                                     vars))
+                              (map (fn [n]
+                                     (build-exp op var1 n))
+                                   nums)))
+                    vars))
+          ops))
+
 (defn exps-with-ops
   [ops max-nesting numbers vars]
   (if (> max-nesting 1)
     (let [exps (exps-with-ops ops (dec max-nesting) numbers vars)]
-      (mapcat (fn [op]
-                (mapcat (fn [exp1]
-                          (map (fn [exp2]
-                                 (build-exp op exp1 exp2))
-                               (if (commutative? op)
-                                 (drop (.indexOf exps exp1) exps)
-                                 exps)))
-                        exps))
-              ops))
-    (mapcat (fn [op]
-              (mapcat (fn [var1]
-                        (concat (map (fn [var2]
-                                       (build-exp op var1 var2))
-                                     (if (commutative? op)
-                                       (drop (.indexOf vars var1) vars)
-                                       vars))
-                                (map (fn [n]
-                                       (build-exp op var1 n))
-                                     numbers)))
-                      vars))
-            ops)))
+      (concat (build-value-exp ops vars exps)
+              (build-value-exp ops numbers exps)
+              (build-exp-exp ops exps)))
+    (build-var-num ops vars numbers)))
 
 (defn numbers
   [n]
