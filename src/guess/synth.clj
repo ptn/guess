@@ -75,15 +75,25 @@
                                          :builder bool/build-comparison
                                          :commutative? bool/commutative?)
         fn-bodies (concat
+                   ;; guesses (= a b); (= c 4)
                    equal-var-simple
+                   ;; guesses (< b c); (< a 3)
                    lt-var-simple
+                   ;; guesses (and (= a b) (= c 4))
                    (nest 'and equal-var-simple)
+                   ;; guesses (and (< a b) (< b c))
                    (nest 'and lt-var-simple)
+                   ;; guesses (= b (+ a 1)); (= c (* b 4))
                    equal-var-arith
+                   ;; guesses (and (= b (+ a 1))
+                   ;;              (= c (+ b 1)))
                    (nest 'and equal-var-arith)
+                   ;; guesses (< c (+ b a))
                    (build-var-arith '< vars arith-exps
                                     :builder bool/build-comparison
                                     :commutative? bool/commutative?)
+                   ;; guesses (and (< b (+ a 1))
+                   ;;              (< c (+ b 4)))
                    (nest 'and (build-var-arith '< vars arith-exps
                                                :builder bool/build-comparison
                                                :commutative? bool/commutative?)))]
