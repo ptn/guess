@@ -33,7 +33,7 @@
                         [(builder op var val)
                          (builder op val var)])
                       exps)))
-          vars))
+          (drop 1 vars)))
 
 
 (defn all-ariths [ops vars nums]

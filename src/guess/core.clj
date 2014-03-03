@@ -32,10 +32,10 @@
                               :max-constant 5
                               :arith-ops '(+ - * /))]
     (let [[valids invalids] (parse-examples-file (first args))]
-      (let [result (some (fn [sol]
-                           (println (:body sol))
-                           (when ((solution? valids invalids) (:unevaled-fn sol))
-                             sol))
+      (let [result (some (fn [cand]
+                           (println (:body cand))
+                           (when ((solution? valids invalids) (:unevaled-fn cand))
+                             cand))
                          candidates)]
         (println "\n\nSOLUTION")
         (println (:body result))))))
