@@ -20,20 +20,22 @@
                (reduce (fn [x y] (and x (not y)))
                        true
                        (map (fn [invalid]
-                              (try
-                                (eval `(~f ~@invalid))
-                                (catch java.lang.ArithmeticException e
-                                  true)))
+                                  (try
+                                    (eval `(~f ~@invalid))
+                                    (catch java.lang.ArithmeticException e
+                                      true)))
                             invalids)))
       f)))
 
 (defn -main [& args]
-  (let [candidates (synth/synthesize :arith-ops '(+ - * /)
-                                     :comparison-ops '(< =)
-                                     :bool-ops '(and or)
-                                     :max-nesting 3
-                                     :max-constant 5
-                                     :n-variables 3)]
+  (let [candidates (synth/all :vars '(a b c)
+                              :max-constant 5
+                              :arith-ops '(+ - * /))]
     (let [[valids invalids] (parse-examples-file (first args))]
-      (println (some #(when ((solution? valids invalids) %) %)
-                     candidates)))))
+      (let [result (some (fn [sol]
+                           (println (:body sol))
+                           (when ((solution? valids invalids) (:unevaled-fn sol))
+                             sol))
+                         candidates)]
+        (println "\n\nSOLUTION")
+        (println (:body result))))))
