@@ -74,6 +74,9 @@
         equal-var-arith (build-var-arith '= vars arith-exps
                                          :builder bool/build-comparison
                                          :commutative? bool/commutative?)
+        lt-var-arith (build-var-arith '< vars arith-exps
+                                      :builder bool/build-comparison
+                                      :commutative? bool/commutative?)
         fn-bodies (concat
                    ;; guesses (= a b); (= c 4)
                    equal-var-simple
@@ -89,13 +92,9 @@
                    ;;              (= c (+ b 1)))
                    (nest 'and equal-var-arith)
                    ;; guesses (< c (+ b a))
-                   (build-var-arith '< vars arith-exps
-                                    :builder bool/build-comparison
-                                    :commutative? bool/commutative?)
+                   lt-var-arith
                    ;; guesses (and (< b (+ a 1))
                    ;;              (< c (+ b 4)))
-                   (nest 'and (build-var-arith '< vars arith-exps
-                                               :builder bool/build-comparison
-                                               :commutative? bool/commutative?)))]
+                   (nest 'and lt-var-arith))]
     (distinct (remove nil? (map (fn [body] (synth body vars))
                                 fn-bodies)))))
