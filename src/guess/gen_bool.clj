@@ -39,8 +39,25 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
         (= (last x) (last y)))
    [1 1]))
 
-;; TODO Refactor.
-(defn build-equal? [x y]
+;; TODO Refactor - don't like a literal true in a conditional, let alone two of them.
+(defn build-equal?
+  "Determine whether to build the form (= x y) or not.
+
+  Don't build if:
+
+  * both x and y are arithmetic expressions, and
+  * they apply the same operation, and
+  * they have one operand in common that's not a number, and
+    ** the other operands are equal to each other, or
+    ** the other operands are both numbers.
+
+  Examples of what not to build:
+
+  (= (* a 3) (* 3 a))
+
+  (= (* (- b 3) (+ a 5))
+     (* (- b 3) (+ a 5)))"
+  [x y]
   (if (same-op? x y)
     (if-let [[posx posy] (same-var? x y)]
       (and (not (= (nth x posx) (nth y posy)))
@@ -50,7 +67,22 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
     true))
 
 ;; TODO PLEASE refactor.
-(defn build-lt? [x y]
+(defn build-lt?
+  "Determine whether to build the form (< x y) or not.
+
+  Don't build it if:
+
+  * both x and y are arithmetic expressions, and
+  * they apply the same operation, and
+  * they have one operand in common that's not a number, and
+  * the other operand is a number in both expressions.
+
+  Examples of what not to build:
+
+  (< (+ a 3) (+ a 1))
+  (< (+ 3 a) (+ a 3))
+  (< (* (+ a 3) 5) (* 12 (+ a 3)))"
+  [x y]
   (if (same-op? x y)
     (if-let [[posx posy] (same-var? x y)]
       (not (and (number? (nth x posx))
@@ -58,7 +90,17 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
       true)
     true))
 
-(defn build-comparison [op x y]
+(defn build-comparison
+  "Determine whether to build a comparison form or not.
+
+  A comparison is not worth building if:
+
+  * the operands are the same, or
+  * they are both numbers
+
+  If these two conditions are false, the decision is delegated to a function
+  specific to the operator."
+  [op x y]
   (when (and (not (= x y))
              (not (and (number? x)
                        (number? y))))

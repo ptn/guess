@@ -53,8 +53,8 @@
 
 (defn -main [& args]
   (let [[valids invalids] (parse-examples-file (first args))
-        result (guess valids invalids (synth/all :vars '(a b c)
-                                                 :max-constant 5
-                                                 :arith-ops '(+ - * /)))]
+        result (guess valids invalids (synth/candidates :vars '(a b c)
+                                                        :max-constant 5
+                                                        :arith-ops '(+ - * /)))]
     (println "\n\nSOLUTION")
     (println (synth/body result))))
