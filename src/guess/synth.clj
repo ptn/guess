@@ -17,18 +17,23 @@
   :commutative? is a function that determines whether the operator is
   commutative or not."
   [op vars nums & {:keys [builder commutative?]}]
-  (mapcat (fn [var]
-            (let [vals (concat nums
-                               (rest-since var vars))]
-              (if (commutative? op)
-                (map (fn [val]
-                       (builder op var val))
-                     vals)
-                (mapcat (fn [val]
-                          [(builder op var val)
-                           (builder op val var)])
-                        vals))))
-          vars))
+  (let [map-over-vars (fn [other & {:keys [use-rest-since?]
+                                    :or {use-rest-since? false}}]
+                        (let [coll (if use-rest-since?
+                                     (rest-since other vars)
+                                     vars)]
+                          (if (commutative? op)
+                            (map (fn [var]
+                                   (builder op var other))
+                                 coll)
+                            (mapcat (fn [var]
+                                      [(builder op var other)
+                                       (builder op other var)])
+                                    coll))))]
+    (concat (mapcat (fn [n] (map-over-vars n))
+                    nums)
+            (mapcat (fn [var] (map-over-vars var :use-rest-since? true))
+                    vars))))
 
 (defn build-var-arith
   "Build all forms (op var exp) for every var, where exp is an arithmetic operation.
