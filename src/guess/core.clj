@@ -29,7 +29,7 @@
                      true)))
                invalids)))
 
-(defn guess [candidates valids invalids]
+(defn guess [valids invalids candidates]
   (some (fn [candidate]
           (println (:body candidate))
           (when (and (passes-valids? (:unevaled-fn candidate) valids)
@@ -38,10 +38,9 @@
         candidates))
 
 (defn -main [& args]
-  (let [candidates (synth/all :vars '(a b c)
-                              :max-constant 5
-                              :arith-ops '(+ - * /))
-        [valids invalids] (parse-examples-file (first args))
-        result (guess candidates valids invalids)]
+  (let [[valids invalids] (parse-examples-file (first args))
+        result (guess valids invalids (synth/all :vars '(a b c)
+                                                 :max-constant 5
+                                                 :arith-ops '(+ - * /)))]
     (println "\n\nSOLUTION")
     (println (:body result))))
