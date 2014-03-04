@@ -57,9 +57,11 @@
           exps))
 
 (defn synth [body vars]
-  {:unevaled-fn `(fn [~@vars]
-                   ~body)
-   :body        body})
+  `(fn [~@vars]
+     ~body))
+
+(defn body [fn]
+  (first (nnext fn)))
 
 (defn all
   [&{:keys [vars max-constant arith-ops]}]
