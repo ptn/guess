@@ -29,17 +29,12 @@
                      true)))
                invalids)))
 
-(defn solution? [valids invalids]
-  (fn [candidate]
-    (when (and (passes-valids? candidate valids)
-               (passes-invalids? candidate invalids))
-      candidate)))
-
 (defn guess [candidates valids invalids]
-  (some (fn [cand]
-          (println (:body cand))
-          (when ((solution? valids invalids) (:unevaled-fn cand))
-            cand))
+  (some (fn [candidate]
+          (println (:body candidate))
+          (when (and (passes-valids? (:unevaled-fn candidate) valids)
+                     (passes-invalids? (:unevaled-fn candidate) invalids))
+            candidate))
         candidates))
 
 (defn -main [& args]
