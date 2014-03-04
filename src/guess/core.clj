@@ -35,15 +35,18 @@
                (passes-invalids? candidate invalids))
       candidate)))
 
+(defn guess [candidates valids invalids]
+  (some (fn [cand]
+          (println (:body cand))
+          (when ((solution? valids invalids) (:unevaled-fn cand))
+            cand))
+        candidates))
+
 (defn -main [& args]
   (let [candidates (synth/all :vars '(a b c)
                               :max-constant 5
                               :arith-ops '(+ - * /))
         [valids invalids] (parse-examples-file (first args))
-        result (some (fn [cand]
-                       (println (:body cand))
-                       (when ((solution? valids invalids) (:unevaled-fn cand))
-                         cand))
-                     candidates)]
+        result (guess candidates valids invalids)]
     (println "\n\nSOLUTION")
     (println (:body result))))
