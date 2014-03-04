@@ -8,24 +8,32 @@
     [(map parser (str/split-lines raw-valids))
      (map parser (str/split-lines raw-invalids))]))
 
+(defn passes-valids? [candidate valids]
+  (reduce (fn [x y]
+            (and x y))
+          (map (fn [valid]
+                 (try
+                   (eval `(~candidate ~@valid))
+                   ;; In case an expression evaluates to (/ ? 0)
+                   (catch java.lang.ArithmeticException e
+                     false)))
+               valids)))
+
+(defn passes-invalids? [candidate invalids]
+  (reduce (fn [x y] (and x (not y)))
+          true
+          (map (fn [invalid]
+                 (try
+                   (eval `(~candidate ~@invalid))
+                   (catch java.lang.ArithmeticException e
+                     true)))
+               invalids)))
+
 (defn solution? [valids invalids]
-  (fn [f]
-    (when (and (reduce (fn [x y] (and x y))
-                       (map (fn [valid]
-                              (try
-                                (eval `(~f ~@valid))
-                                (catch java.lang.ArithmeticException e
-                                  false)))
-                            valids))
-               (reduce (fn [x y] (and x (not y)))
-                       true
-                       (map (fn [invalid]
-                                  (try
-                                    (eval `(~f ~@invalid))
-                                    (catch java.lang.ArithmeticException e
-                                      true)))
-                            invalids)))
-      f)))
+  (fn [candidate]
+    (when (and (passes-valids? candidate valids)
+               (passes-invalids? candidate invalids))
+      candidate)))
 
 (defn -main [& args]
   (let [candidates (synth/all :vars '(a b c)
