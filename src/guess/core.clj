@@ -38,12 +38,12 @@
 (defn -main [& args]
   (let [candidates (synth/all :vars '(a b c)
                               :max-constant 5
-                              :arith-ops '(+ - * /))]
-    (let [[valids invalids] (parse-examples-file (first args))]
-      (let [result (some (fn [cand]
-                           (println (:body cand))
-                           (when ((solution? valids invalids) (:unevaled-fn cand))
-                             cand))
-                         candidates)]
-        (println "\n\nSOLUTION")
-        (println (:body result))))))
+                              :arith-ops '(+ - * /))
+        [valids invalids] (parse-examples-file (first args))
+        result (some (fn [cand]
+                       (println (:body cand))
+                       (when ((solution? valids invalids) (:unevaled-fn cand))
+                         cand))
+                     candidates)]
+    (println "\n\nSOLUTION")
+    (println (:body result))))
