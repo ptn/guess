@@ -39,11 +39,23 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
         (= (last x) (last y)))
    [1 1]))
 
+(defn one-is-others-operand?
+  "Detects cases like the following:
+
+  x = b, y = (* b 1)
+  x = a, y = (+ a (* 8 c))"
+  [x y]
+  (let [test (fn [x y]
+               (and (not (number? x))
+                    (coll? y)
+                    (some #{x} (drop 1 y))))]
+    (or (test x y) (test y x))))
+
 ;; TODO Refactor - don't like a literal true in a conditional, let alone two of them.
 (defn build-equal?
   "Determine whether to build the form (= x y) or not.
 
-  Don't build if:
+  Don't build if one of two cases. First case:
 
   * both x and y are arithmetic expressions, and
   * they apply the same operation, and
@@ -56,7 +68,19 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
   (= (* a 3) (* 3 a))
 
   (= (* (- b 3) (+ a 5))
-     (* (- b 3) (+ a 5)))"
+     (* (- b 3) (+ a 5)))
+
+  Second case:
+
+  * one of the parameters is not a number, and
+  * the other one is an arithmetic operation, and
+  * said operation has as one of its operands the other parameter, and
+  * said operation is neither the additive nor the multiplicative identity
+
+  Examples:
+
+  (= b (* b 4))
+  (= (+ c 3) (* 5 (+ c 3)))"
   [x y]
   (if (same-op? x y)
     (if-let [[posx posy] (same-var? x y)]
@@ -64,7 +88,7 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
            (or (not (number? (nth x posx)))
                (not (number? (nth y posy)))))
       true)
-    true))
+    (not (one-is-others-operand? x y))))
 
 ;; TODO PLEASE refactor.
 (defn build-lt?

@@ -3,7 +3,7 @@
             [guess.gen-bool :as bool]))
 
 (defn numbers [max]
-  (range 1 (+ 1 max)))
+  (range (+ 1 max)))
 
 (defn rest-since [elt seq]
   (drop (+ 1 (.indexOf seq elt))
