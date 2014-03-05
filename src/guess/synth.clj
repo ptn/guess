@@ -30,10 +30,10 @@
                                       [(builder op var other)
                                        (builder op other var)])
                                     coll))))]
-    (concat (mapcat (fn [n] (map-over-vars n))
-                    nums)
-            (mapcat (fn [var] (map-over-vars var :use-rest-since? true))
-                    vars))))
+    (distinct (remove nil? (concat (mapcat (fn [n] (map-over-vars n))
+                                            nums)
+                                    (mapcat (fn [var] (map-over-vars var :use-rest-since? true))
+                                            vars))))))
 
 (defn build-var-arith
   "Build all forms (op var exp) for every var, where exp is an arithmetic operation.
@@ -43,32 +43,33 @@
   :commutative? is a function that determines whether the operator is
   commutative or not."
   [op vars exps & {:keys [builder commutative?]}]
-  (mapcat (fn [var]
-            (if (commutative? op)
-              (map (fn [val]
-                     (builder op var val))
-                   exps)
-              (mapcat (fn [val]
-                        [(builder op var val)
-                         (builder op val var)])
-                      exps)))
-          (drop 1 vars)))
+  (distinct (remove nil? (mapcat (fn [var]
+                                   (if (commutative? op)
+                                     (map (fn [val]
+                                            (builder op var val))
+                                          exps)
+                                     (mapcat (fn [val]
+                                               [(builder op var val)
+                                                (builder op val var)])
+                                             exps)))
+                                 (drop 1 vars)))))
 
 
 (defn all-ariths
   "Generate all arith expressions according to the grammar."
   [ops vars nums]
-  (let [exps (mapcat (fn [op]
-                       (build-var-simple op vars nums
-                                         :builder arith/build-exp
-                                         :commutative? arith/commutative?))
-                     ops)
+  (let [exps (remove nil?
+                     (mapcat (fn [op]
+                               (build-var-simple op vars nums
+                                                 :builder arith/build-exp
+                                                 :commutative? arith/commutative?))
+                             ops))
         nested (mapcat (fn [op]
                          (build-var-arith op vars exps
                                           :builder arith/build-exp
                                           :commutative? arith/commutative?))
                        ops)]
-    (concat exps nested)))
+    (remove nil? (concat exps nested))))
 
 (defn nest
   "Nest expressions given a boolean operator (like and)."
@@ -131,24 +132,24 @@
         lt-var-arith (build-var-arith '< vars arith-exps
                                       :builder bool/build-comparison
                                       :commutative? bool/commutative?)
-        fn-bodies (concat
-                   ;; guesses (= a b); (= c 4)
-                   equal-var-simple
-                   ;; guesses (< b c); (< a 3)
-                   lt-var-simple
-                   ;; guesses (and (= a b) (= c 4))
-                   (nest 'and equal-var-simple)
-                   ;; guesses (and (< a b) (< b c))
-                   (nest 'and lt-var-simple)
-                   ;; guesses (= b (+ a 1)); (= c (* b 4))
-                   equal-var-arith
-                   ;; guesses (and (= b (+ a 1))
-                   ;;              (= c (+ b 1)))
-                   (nest 'and equal-var-arith)
-                   ;; guesses (< c (+ b a))
-                   lt-var-arith
-                   ;; guesses (and (< b (+ a 1))
-                   ;;              (< c (+ b 4)))
-                   (nest 'and lt-var-arith))]
-    (distinct (remove nil? (map (fn [body] (synth body vars))
-                                fn-bodies)))))
+        fn-bodies  (concat
+                    ;; guesses (= a b); (= c 4)
+                    equal-var-simple
+                    ;; guesses (< b c); (< a 3)
+                    lt-var-simple
+                    ;; guesses (and (= a b) (= c 4))
+                    (nest 'and equal-var-simple)
+                    ;; guesses (and (< a b) (< b c))
+                    (nest 'and lt-var-simple)
+                    ;; guesses (= b (+ a 1)); (= c (* b 4))
+                    equal-var-arith
+                    ;; guesses (and (= b (+ a 1))
+                    ;;              (= c (+ b 1)))
+                    (nest 'and equal-var-arith)
+                    ;; guesses (< c (+ b a))
+                    lt-var-arith
+                    ;; guesses (and (< b (+ a 1))
+                    ;;              (< c (+ b 4)))
+                    (nest 'and lt-var-arith))]
+    (map (fn [body] (synth body vars))
+         fn-bodies)))
