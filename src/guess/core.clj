@@ -1,5 +1,5 @@
 (ns guess.core
-  (:require [guess.synth :as synth]
+  (:require [guess.hypoth :as hypoth]
             [clojure.string :as str]))
 
 (defn parse-examples-file
@@ -10,51 +10,61 @@
     [(map parser (str/split-lines raw-valids))
      (map parser (str/split-lines raw-invalids))]))
 
-(defn passes-valids?
-  "Verify that candidate outputs true for every test case in valids."
-  [candidate valids]
-  (reduce (fn [x y]
-            (and x y))
-          (map (fn [valid]
-                 (try
-                   (eval `(~candidate ~@valid))
-                   ;; In case an expression evaluates to (/ ? 0)
-                   (catch java.lang.ArithmeticException e
-                     false)))
-               valids)))
+(defn run-hypoth
+  "Run a hypothesis against a set of test cases."
+  [hypoth tests]
+  (map (fn [test]
+         (try
+           (eval `(~hypoth ~@test))
+           ;; In case an expression evaluates to (/ ? 0)
+           (catch java.lang.ArithmeticException e
+             false)))
+       tests))
 
-(defn passes-invalids?
-  "Verify that candidate outputs false for every test case in invalids."
-  [candidate invalids]
-  (reduce (fn [x y] (and x (not y)))
-          true
-          (map (fn [invalid]
-                 (try
-                   (eval `(~candidate ~@invalid))
-                   (catch java.lang.ArithmeticException e
-                     true)))
-               invalids)))
+(defn valids-passed
+  "Count the number of positive test cases passed."
+  [hypoth valids]
+  (count (keep #{true} (run-hypoth hypoth valids))))
+
+(defn invalids-passed
+  "Count the number of negative test cases passed."
+  [hypoth invalids]
+  (count (keep #{false} (run-hypoth hypoth invalids))))
+
+(defn solution?
+  "Tests whether a hypothesis passes al positive and negative test cases."
+  [hypoth valids invalids]
+  (let [vp (valids-passed hypoth valids)
+        ip (invalids-passed hypoth invalids)]
+    [vp ip (and (= (count valids)   vp)
+                (= (count invalids) ip))]))
 
 (defn guess
   "Find the boolean function that produces the correct output for the input.
 
-  * candidates is a lazy seq of unevaluated function forms
-  * valids is seq of inputs for which a boolean function must output true
+  * get-hypoth is a closure that produces the hypothesis to test next. It also
+    returns the closure that needs to be invoked to record how well the previous
+    hypothesis performed; this recorder closure in turn returns the new
+    get-hypoth to be used later in the program.
+  * valids is a seq of inputs for which a boolean function must output true
   * invalids is a seq for which said function must output false
 
-  This function finds said function in the candidates seq, if there is one."
-  [valids invalids candidates]
-  (some (fn [candidate]
-          (println (synth/body candidate))
-          (when (and (passes-valids? candidate valids)
-                     (passes-invalids? candidate invalids))
-            candidate))
-        candidates))
+  This function finds said function in the get-hypoth lazy seq, if there is one."
+  [valids invalids get-hypoth]
+  (let [[hypoth get-hypoth-builder] (get-hypoth)]
+    (when hypoth
+      (let [[last-valids-passed last-invalids-passed result]
+            (solution? hypoth valids invalids)]
+        (println (hypoth/body hypoth))
+        (if result
+          hypoth
+          (recur valids
+                 invalids
+                 (get-hypoth-builder last-valids-passed last-invalids-passed)))))))
 
 (defn -main [& args]
   (let [[valids invalids] (parse-examples-file (first args))
-        result (guess valids invalids (synth/candidates :vars '(a b c)
-                                                        :max-constant 5
-                                                        :arith-ops '(+ - * /)))]
+        result (guess valids invalids (hypoth/hypotheses :vars '(a b c)
+                                                         :max-constant 5))]
     (println "\n\nSOLUTION")
-    (println (synth/body result))))
+    (println (hypoth/body result))))

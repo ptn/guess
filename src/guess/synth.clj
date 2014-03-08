@@ -57,8 +57,9 @@
 
 (defn all-ariths
   "Generate all arith expressions according to the grammar."
-  [ops vars nums]
-  (let [exps (remove nil?
+  [vars nums]
+  (let [ops '(+ - * /)
+        exps (remove nil?
                      (mapcat (fn [op]
                                (build-var-simple op vars nums
                                                  :builder arith/build-exp
@@ -117,7 +118,7 @@
 
   NESTED-LT-V-A    -> (AND LT-VAR-ARITH LT-VAR-ARITH)
   "
-  [&{:keys [vars max-constant arith-ops]}]
+  [&{:keys [vars max-constant]}]
   (let [nums (numbers max-constant)
         equal-var-simple (build-var-simple '= vars nums
                                            :builder bool/build-comparison
@@ -125,7 +126,7 @@
         lt-var-simple (build-var-simple '< vars nums
                                         :builder bool/build-comparison
                                         :commutative? bool/commutative?)
-        arith-exps (all-ariths arith-ops vars nums)
+        arith-exps (all-ariths vars nums)
         equal-var-arith (build-var-arith '= vars arith-exps
                                          :builder bool/build-comparison
                                          :commutative? bool/commutative?)
