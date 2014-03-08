@@ -1,4 +1,4 @@
-(ns guess.gen-arith)
+(ns guess.arith)
 
 (defn assoc-op [op]
   (get {'clojure.core/* *

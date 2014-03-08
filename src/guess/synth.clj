@@ -1,6 +1,4 @@
-(ns guess.synth
-  (:require [guess.gen-arith :as arith]
-            [guess.gen-bool :as bool]))
+(ns guess.synth)
 
 (defn numbers [max]
   (range (+ 1 max)))

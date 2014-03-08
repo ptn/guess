@@ -1,4 +1,4 @@
-(ns guess.gen-bool)
+(ns guess.bool)
 
 (defn commutative? [op]
   (#{'=} op))

@@ -34,33 +34,32 @@
 (defn solution?
   "Tests whether a hypothesis passes al positive and negative test cases."
   [hypoth valids invalids]
-  (let [vp (valids-passed hypoth valids)
-        ip (invalids-passed hypoth invalids)]
-    [vp ip (and (= (count valids)   vp)
-                (= (count invalids) ip))]))
+  (let [ratio-valids   (float (/ (valids-passed hypoth valids)
+                                 (count valids)))
+        ratio-invalids (float (/ (invalids-passed hypoth invalids)
+                                 (count invalids)))]
+    [ratio-valids ratio-invalids (and (= 1 ratio-valids)
+                                      (= 1 ratio-invalids))]))
 
 (defn guess
   "Find the boolean function that produces the correct output for the input.
 
-  * get-hypoth is a closure that produces the hypothesis to test next. It also
-    returns the closure that needs to be invoked to record how well the previous
-    hypothesis performed; this recorder closure in turn returns the new
-    get-hypoth to be used later in the program.
+  * get-hypoth is a closure of the kind returned by hypoth/hypotheses
   * valids is a seq of inputs for which a boolean function must output true
   * invalids is a seq for which said function must output false
 
   This function finds said function in the get-hypoth lazy seq, if there is one."
   [valids invalids get-hypoth]
-  (let [[hypoth get-hypoth-builder] (get-hypoth)]
+  (let [[hypoth results-recorder] (get-hypoth)]
     (when hypoth
-      (let [[last-valids-passed last-invalids-passed result]
+      (let [[valids-ratio invalids-ratio result]
             (solution? hypoth valids invalids)]
         (println (hypoth/body hypoth))
         (if result
           hypoth
           (recur valids
                  invalids
-                 (get-hypoth-builder last-valids-passed last-invalids-passed)))))))
+                 (results-recorder valids-ratio invalids-ratio)))))))
 
 (defn -main [& args]
   (let [[valids invalids] (parse-examples-file (first args))
