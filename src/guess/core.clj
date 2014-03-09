@@ -15,6 +15,8 @@
   [hypoth tests]
   (map (fn [test]
          (try
+           ;; (println hypoth)
+           ;; (println test)
            (eval `(~hypoth ~@test))
            ;; In case an expression evaluates to (/ ? 0)
            (catch java.lang.ArithmeticException e

@@ -1,26 +1,16 @@
 (ns guess.hypoth
-  (:require [guess.bool :as bool]
-            [guess.arith :as arith]
-            [guess.synth :as synth]))
+  (:require [guess.synth :as synth]))
 
 (defn body
   "Return the body of a hypothesis."
   [hypoth]
   (first (nnext hypoth)))
 
-(defn first-batch [vars numbers]
-  (concat (synth/build-var-simple '= vars numbers
-                                  :builder bool/build-comparison
-                                  :commutative? bool/commutative?)
-          (synth/build-var-simple '< vars numbers
-                                  :builder bool/build-comparison
-                                  :commutative? bool/commutative?)))
-
 (defn next-batch
   "Generate next batch of hypotheses to test."
-  [seen latest-results vars numbers]
+  [seen latest-results vars max-constant]
   (if (empty? seen)
-    (first-batch)))
+    (synth/simplest vars max-constant)))
 
 (defn hypotheses
   "Returns a closure that returns:
@@ -32,10 +22,7 @@
   [&{:keys [vars max-constant seen results queue]
      :or {seen [] results [] queue []}}]
   (let [[queue results] (if (empty? queue)
-                          [(next-batch seen
-                                       (first results)
-                                       vars
-                                       (synth/numbers max-constat))
+                          [(next-batch seen (first results) vars max-constant)
                            (rest results)]
                           [queue results])
         hypoth (first queue)]

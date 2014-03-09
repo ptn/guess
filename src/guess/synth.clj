@@ -1,4 +1,6 @@
-(ns guess.synth)
+(ns guess.synth
+  (:require [guess.arith :as arith]
+            [guess.bool  :as bool]))
 
 (defn numbers [max]
   (range (+ 1 max)))
@@ -147,3 +149,14 @@
                     (nest 'and lt-var-arith))]
     (map (fn [body] (synth body vars))
          fn-bodies)))
+
+(defn simplest
+  [vars max-constant]
+  (let [nums (numbers max-constant)]
+    (map (fn [body] (synth body vars))
+         (concat (build-var-simple '= vars nums
+                                   :builder bool/build-comparison
+                                   :commutative? bool/commutative?)
+                 (build-var-simple '< vars nums
+                                   :builder bool/build-comparison
+                                   :commutative? bool/commutative?)))))
