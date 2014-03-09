@@ -85,11 +85,6 @@
   `(fn [~@vars]
      ~body))
 
-(defn body
-  "Return the body of an unevaluated function form."
-  [fn]
-  (first (nnext fn)))
-
 (defn candidates
   "Generate all expressions in the following grammar:
 
