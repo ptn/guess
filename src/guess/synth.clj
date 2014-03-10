@@ -81,11 +81,15 @@
                  (rest-since exp1 exps)))
           exps))
 
-(defn synth
+(defn synth-one
   "Construct an unevaluated function form given its params and body."
-  [body vars]
+  [vars body]
   `(fn [~@vars]
      ~body))
+
+(defn synth [vars bodies]
+  (map (fn [body] (synth-one vars body))
+       bodies))
 
 (defn candidates
   "Generate all expressions in the following grammar:
@@ -147,16 +151,28 @@
                     ;; guesses (and (< b (+ a 1))
                     ;;              (< c (+ b 4)))
                     (nest 'and lt-var-arith))]
-    (map (fn [body] (synth body vars))
-         fn-bodies)))
+    (synth vars fn-bodies)))
 
 (defn simplest
   [vars max-constant]
   (let [nums (numbers max-constant)]
-    (map (fn [body] (synth body vars))
-         (concat (build-var-simple '= vars nums
-                                   :builder bool/build-comparison
-                                   :commutative? bool/commutative?)
-                 (build-var-simple '< vars nums
-                                   :builder bool/build-comparison
-                                   :commutative? bool/commutative?)))))
+    (synth vars
+           (concat (build-var-simple '= vars nums
+                                     :builder bool/build-comparison
+                                     :commutative? bool/commutative?)
+                   (build-var-simple '< vars nums
+                                     :builder bool/build-comparison
+                                     :commutative? bool/commutative?)))))
+
+(defn expand
+  "Synthesize new boolean expressions given the results for a previous one.
+
+  Keys of the params map:
+
+  * :hypoth - the expression to expand
+  * :ratio-valids - ratio of positive test cases it passed
+  * :ratio-invalids - ratio of negative test cases it passed
+  * :seen - expressions already generated, queried to avoid repeated values
+  * :vars - vars used when generating expressions
+  * :max-constant - max number allowed to use as a constant in an expression"
+  [params])

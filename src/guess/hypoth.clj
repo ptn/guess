@@ -10,7 +10,11 @@
   "Generate next batch of hypotheses to test."
   [seen latest-results vars max-constant]
   (if (empty? seen)
-    (synth/simplest vars max-constant)))
+    (synth/simplest vars max-constant)
+    (synth/expand (assoc latest-results
+                    :seen seen
+                    :vars vars
+                    :max-constant max-constant))))
 
 (defn hypotheses
   "Returns a closure that returns:
@@ -21,16 +25,19 @@
   closure of the type that this function returns."
   [&{:keys [vars max-constant seen results queue]
      :or {seen [] results [] queue []}}]
-  (let [[queue results] (if (empty? queue)
-                          [(next-batch seen (first results) vars max-constant)
-                           (rest results)]
-                          [queue results])
+  (let [[queue results seen] (if (empty? queue)
+                               (let [new-queue
+                                     (next-batch seen (first results) vars max-constant)]
+                                 [new-queue
+                                  (rest results)
+                                  (into seen new-queue)])
+                               [queue results seen])
         hypoth (first queue)]
     (fn []
       [hypoth (fn [ratio-valids ratio-invalids]
                 (hypotheses :vars vars
                             :max-constant max-constant
-                            :seen (conj seen hypoth)
+                            :seen seen
                             :results (conj results {:hypoth hypoth
                                                     :ratio-valids ratio-valids
                                                     :ratio-invalids ratio-invalids})
