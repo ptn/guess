@@ -31,15 +31,26 @@
   [hypoth invalids]
   (count (keep #{false} (run-hypoth hypoth invalids))))
 
-(defn solution?
-  "Tests whether a hypothesis passes al positive and negative test cases."
+(defn ratios
+  "Return how many positive and negative tests a hypothesis passes."
   [hypoth valids invalids]
   (let [ratio-valids   (float (/ (valids-passed hypoth valids)
                                  (count valids)))
         ratio-invalids (float (/ (invalids-passed hypoth invalids)
                                  (count invalids)))]
-    [ratio-valids ratio-invalids (and (= 1 ratio-valids)
-                                      (= 1 ratio-invalids))]))
+    [ratio-valids ratio-invalids]))
+
+(defn solution?
+  "Test whether a hypothesis passes all tests."
+  [ratio-valids ratio-invalids]
+  (and (= 1.0 ratio-valids)
+       (= 1.0 ratio-invalids)))
+
+(defn anti-solution?
+  "Test whether a hypothesis fails all tests."
+  [ratio-valids ratio-invalids]
+  (and (= 0.0 ratio-valids)
+       (= 0.0 ratio-invalids)))
 
 (defn guess
   "Find the boolean function that produces the correct output for the input.
@@ -52,14 +63,15 @@
   [valids invalids get-hypoth]
   (let [[hypoth results-recorder] (get-hypoth)]
     (when hypoth
-      (let [[valids-ratio invalids-ratio result]
-            (solution? hypoth valids invalids)]
+      (let [[ratio-valids ratio-invalids] (ratios hypoth valids invalids)]
         (println (hypoth/body hypoth))
-        (if result
+        (if (solution? ratio-valids ratio-invalids)
           hypoth
-          (recur valids
-                 invalids
-                 (results-recorder valids-ratio invalids-ratio)))))))
+          (if (anti-solution? ratio-valids ratio-invalids)
+            (hypoth/negate hypoth)
+            (recur valids
+                   invalids
+                   (results-recorder ratio-valids ratio-invalids))))))))
 
 (defn -main [& args]
   (let [[valids invalids] (parse-examples-file (first args))

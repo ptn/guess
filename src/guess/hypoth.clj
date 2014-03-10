@@ -6,15 +6,25 @@
   [hypoth]
   (first (nnext hypoth)))
 
+(defn args
+  "Return the list of arguments a hypothesis takes."
+  [hypoth]
+  (second hypoth))
+
+(defn negate
+  "Produce (not HYPOTH)"
+  [hypoth]
+  (synth/synth-one (args hypoth) (synth/negate (body hypoth))))
+
 (defn next-batch
   "Generate next batch of hypotheses to test."
-  [seen latest-results vars max-constant]
+  [seen result vars max-constant]
   (if (empty? seen)
     (synth/simplest vars max-constant)
-    (synth/expand (assoc latest-results
-                    :seen seen
-                    :vars vars
-                    :max-constant max-constant))))
+    (synth/from result
+                seen
+                :vars vars
+                :max-constant max-constant)))
 
 (defn hypotheses
   "Returns a closure that returns:

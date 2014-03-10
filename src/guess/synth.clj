@@ -91,6 +91,9 @@
   (map (fn [body] (synth-one vars body))
        bodies))
 
+(defn negate [exp]
+  `(not ~exp))
+
 (defn candidates
   "Generate all expressions in the following grammar:
 
@@ -164,15 +167,20 @@
                                      :builder bool/build-comparison
                                      :commutative? bool/commutative?)))))
 
-(defn expand
+(defn from
   "Synthesize new boolean expressions given the results for a previous one.
 
-  Keys of the params map:
+  Arguments:
 
-  * :hypoth - the expression to expand
-  * :ratio-valids - ratio of positive test cases it passed
-  * :ratio-invalids - ratio of negative test cases it passed
-  * :seen - expressions already generated, queried to avoid repeated values
+  * result - a map containing:
+    * :hypoth - the expression to expand
+    * :ratio-valids - ratio of positive test cases it passed
+    * :ratio-invalids - ratio of negative test cases it passed
+  * seen - expressions already generated, queried to avoid repeated values
+
+  Keyword arguments:
+
   * :vars - vars used when generating expressions
   * :max-constant - max number allowed to use as a constant in an expression"
-  [params])
+  [result seen &{:keys [vars max-constant]}]
+  )
