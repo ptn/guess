@@ -63,8 +63,8 @@
   [valids invalids get-hypoth]
   (let [[hypoth results-recorder] (get-hypoth)]
     (when hypoth
+      (println (hypoth/body hypoth))
       (let [[ratio-valids ratio-invalids] (ratios hypoth valids invalids)]
-        (println (hypoth/body hypoth))
         (if (solution? ratio-valids ratio-invalids)
           hypoth
           (if (anti-solution? ratio-valids ratio-invalids)

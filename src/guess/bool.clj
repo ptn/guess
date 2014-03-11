@@ -114,7 +114,7 @@ e.g. '(+ a 8) and '(* 9 a) or even '(+ (* x 3) 8) and '(+ (* x 3) 12)."
       true)
     true))
 
-(defn build-comparison
+(defn build-exp
   "Determine whether to build a comparison form or not.
 
   A comparison is not worth building if:

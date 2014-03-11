@@ -14,11 +14,11 @@
 (defn negate
   "Produce (not HYPOTH)"
   [hypoth]
-  (synth/synth-one (args hypoth) (synth/negate (body hypoth))))
+  (synth/negate (args hypoth) (body hypoth)))
 
 (defn next-batch
   "Generate next batch of hypotheses to test."
-  [seen result vars max-constant]
+  [result seen vars max-constant]
   (if (empty? seen)
     (synth/simplest vars max-constant)
     (synth/from result
@@ -32,15 +32,26 @@
   * the next hypothesis to test
   * the closure that needs to be invoked to record how well the previous
   hypothesis performed. This recorder closure in turn returns a new
-  closure of the type that this function returns."
+  closure of the type that this function returns.
+
+  Arguments:
+
+  :vars - the variables to use when generating hypotheses
+  :max-constant - the greatest natural number to use as a constant in a
+                  hypothesis
+  :seen - a set of hypotheses bodies to keep track of to avoid repetitions
+  :results - a map containing the body of a hypothesis and the ratio of valid
+             positive tests passed and negative tests passed.
+  :queue - already generated hypotheses to test next in that order
+  :"
   [&{:keys [vars max-constant seen results queue]
-     :or {seen [] results [] queue []}}]
+     :or {seen #{} results [] queue []}}]
   (let [[queue results seen] (if (empty? queue)
-                               (let [new-queue
-                                     (next-batch seen (first results) vars max-constant)]
+                               (let [queue'
+                                     (next-batch (first results) seen vars max-constant)]
                                  [new-queue
                                   (rest results)
-                                  (into seen new-queue)])
+                                  (into seen queue')])
                                [queue results seen])
         hypoth (first queue)]
     (fn []
@@ -48,7 +59,7 @@
                 (hypotheses :vars vars
                             :max-constant max-constant
                             :seen seen
-                            :results (conj results {:hypoth hypoth
+                            :results (conj results {:body (body hypoth)
                                                     :ratio-valids ratio-valids
                                                     :ratio-invalids ratio-invalids})
                             :queue (rest queue)))])))
